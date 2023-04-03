@@ -41,6 +41,10 @@ public class BasicAnalysisTests {
         }
         dir.delete();
     }
+    @Test
+    public void TestListener(){
+
+    }
     
     @Test
     public void javaASTreeDotTest() {

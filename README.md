@@ -185,3 +185,72 @@ If you wish to build PROGEX from the source and start developing your own change
 4. `cd graphs && mvn clean install && cd ..`
 5. `git clone https://github.com/ghaffarian/progex.git`
 6. `cd progex && mvn clean install`
+
+
+
+
+
+# 如何从源码生成AST,CFG,PDG,DDG？— Progex学习笔记
+
+## Antlr工具导入
+
+生成之前，需要借助antlr框架，对每个语言（以java为例）生成对应的词法分析器Lexer和语法分析器Parser以及Visitor。
+
+这一步可以通过maven来实现，配置maven插件
+
+```xml
+<build>
+        <plugins>
+            <plugin>
+                <groupId>org.antlr</groupId>
+                <artifactId>antlr4-maven-plugin</artifactId>
+                <version>4.7.1</version>
+                <configuration>
+                    <sourceDirectory>${basedir}/src/main/antlr4</sourceDirectory>
+                    <includes>
+                        <include>Java8Lexer.g4</include>
+                        <include>Java8Parser.g4</include>
+                    </includes>
+                    <visitor>true</visitor>
+                    <listener>true</listener>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>antlr4</goal>
+                        </goals>
+
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+```
+
+在antlr4目录下存放grammar文件，通过执行`mvn package`就会在目录target/generated-sources生成Lexer，Parser，Visitor，Listener这些工具会帮助我们进行AST，CFG，PDG，DDG。
+
+## 生成AST
+
+如何解析parseTree还需要根据grammar文件来判断。
+
+```java
+public static AbstractSyntaxTree build(File javaFile) throws IOException {
+		if (!javaFile.getName().endsWith(".java"))
+			throw new IOException("Not a Java File!");
+    	// 获取输入文件
+		InputStream inFile = new FileInputStream(javaFile);
+    	// 构建antlr输入流
+		ANTLRInputStream input = new ANTLRInputStream(inFile);
+    	// 将输入流传给词法分析器
+		JavaLexer lexer = new JavaLexer(input);
+    	// 获取tokens
+		CommonTokenStream tokens = new CommonTokenStream(lexer);
+    	// 解析tokens
+		JavaParser parser = new JavaParser(tokens);
+    	// 生成解析树
+		ParseTree tree = parser.compilationUnit();
+		return build(javaFile.getPath(), tree, null, null);
+}
+```
+
+目前还没看懂（明天通过断点排查继续）
